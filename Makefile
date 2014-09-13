@@ -15,12 +15,15 @@ templates = $(foreach file,$(generated), $(file).template)
 generator = generator.py
 
 test_source = src/test.cpp
+marshal_files = marshal.list src/marshal.h src/marshal.c
 
-objs = gen.o
+source := $(generated) $(marshal_files)
+source := $(filter %.c %.h, $(source))
+
+objs := $(patsubst src/%.c,%.o,$(filter %.c,$(source)))
 dynamic_lib = libgtkscintilla3.so
 
 all: $(dynamic_lib) test
-
 $(SCINTILLA_LIB):
 	make -C $(SCINTILLA_DIR)/gtk GTK3=1
 
@@ -33,11 +36,20 @@ test: $(test_source) $(dynamic_lib)
 	$(CXX) -o test $(CFLAGS) $(LDFLAGS) $(test_source) -lgtkscintilla3 -Wl,-rpath,.
 
 #TODO: improve this
-gen.o: $(generated)
-	$(CC) -c -fpic $(CFLAGS) src/gtkscintilla.c -o gen.o
+%.o : src/%.c $(filter %.h, $(source))
+	$(CC) -c -fpic $(CFLAGS) $< -o $@
 
-$(dynamic_lib): $(objs) $(SCINTILLA_LIB) 
+$(dynamic_lib): $(objs) $(SCINTILLA_LIB)
 	$(CXX) -shared -o $(dynamic_lib) $(LDFLAGS) $(objs) $(SCINTILLA_LIB) -Wl,-soname,libgtkscintilla3.so
+
+marshal.list: $(generator)
+	$(PYTHON) $(generator) --mode marshal
+
+src/marshal.h: marshal.list
+	glib-genmarshal --header --prefix="gtkscintilla_marshal" marshal.list > $@
+
+src/marshal.c: marshal.list
+	glib-genmarshal --body --prefix="gtkscintilla_marshal" marshal.list > $@
 
 clean:
 	-rm test *.o *.so
@@ -45,3 +57,4 @@ clean:
 
 cleanall: clean
 	make -C $(SCINTILLA_DIR)/gtk clean
+	-rm $(marshal_files)

@@ -1,15 +1,16 @@
 #include <stdlib.h>
 #include <gtk/gtk.h>
 #include <gtkscintilla.h>
+#include <cstdio>
 
 static void helloWorld (GtkWidget *wid, GtkWidget *win)
 {
-  GtkWidget *dialog = NULL;
+  printf("HELLO W\n");
+}
 
-  dialog = gtk_message_dialog_new (GTK_WINDOW (win), GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_CLOSE, "Hello World!");
-  gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
-  gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
+static void onKey (GtkWidget *wid, gint key, gint modifier, GtkWidget *win)
+{
+  printf("KEY %d %d\n", key, modifier);
 }
 
 int main (int argc, char *argv[])
@@ -38,10 +39,12 @@ int main (int argc, char *argv[])
 
   button = gtk_button_new_from_stock (GTK_STOCK_DIALOG_INFO);
   g_signal_connect (G_OBJECT (button), "clicked", G_CALLBACK (helloWorld), (gpointer) win);
+
   gtk_box_pack_start (GTK_BOX (vbox), button, TRUE, TRUE, 0);
 
   sci = gtk_scintilla_new();
   gtk_box_pack_start (GTK_BOX (vbox), sci, TRUE, TRUE, 0);
+    g_signal_connect (G_OBJECT (sci), "key", G_CALLBACK (onKey), NULL);
 
   /* Enter the main loop */
   gtk_widget_show_all (win);
